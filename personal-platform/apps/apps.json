@@ -1,0 +1,296 @@
+{
+  "schema_version": "openfoundry.apps.v1",
+  "apps": [
+    {
+      "name": "Wealth Command Center",
+      "slug": "wealth-command-center",
+      "description": "Real-time wealth intelligence dashboard with net worth tracking, asset allocation, income analysis, and AI advisor",
+      "status": "published",
+      "template_key": "dashboard",
+      "pages": [
+        {
+          "id": "overview",
+          "name": "Overview",
+          "layout": "grid",
+          "widgets": [
+            {
+              "id": "nw-kpi",
+              "type": "kpi",
+              "position": {"x": 0, "y": 0, "w": 3, "h": 2},
+              "config": {
+                "title": "Net Worth",
+                "data_source": {"type": "ontology_query", "object_type": "net_worth_snapshot", "sort": {"snapshot_date": "desc"}, "limit": 1},
+                "value_field": "net_worth",
+                "format": "currency",
+                "delta_field": "delta_30d",
+                "delta_format": "percent"
+              }
+            },
+            {
+              "id": "liquid-kpi",
+              "type": "kpi",
+              "position": {"x": 3, "y": 0, "w": 3, "h": 2},
+              "config": {
+                "title": "Liquid Assets",
+                "data_source": {"type": "ontology_query", "object_type": "net_worth_snapshot", "sort": {"snapshot_date": "desc"}, "limit": 1},
+                "value_field": "liquid_assets",
+                "format": "currency"
+              }
+            },
+            {
+              "id": "income-kpi",
+              "type": "kpi",
+              "position": {"x": 6, "y": 0, "w": 3, "h": 2},
+              "config": {
+                "title": "Monthly Income",
+                "data_source": {"type": "ontology_query", "object_type": "net_worth_snapshot", "sort": {"snapshot_date": "desc"}, "limit": 1},
+                "value_field": "monthly_income",
+                "format": "currency"
+              }
+            },
+            {
+              "id": "runway-kpi",
+              "type": "kpi",
+              "position": {"x": 9, "y": 0, "w": 3, "h": 2},
+              "config": {
+                "title": "Runway",
+                "data_source": {"type": "ontology_query", "object_type": "net_worth_snapshot", "sort": {"snapshot_date": "desc"}, "limit": 1},
+                "value_field": "runway_months",
+                "format": "number",
+                "suffix": " months"
+              }
+            },
+            {
+              "id": "nw-trend",
+              "type": "chart",
+              "position": {"x": 0, "y": 2, "w": 8, "h": 4},
+              "config": {
+                "title": "Net Worth Over Time",
+                "chart_type": "area",
+                "data_source": {"type": "ontology_query", "object_type": "net_worth_snapshot", "sort": {"snapshot_date": "asc"}, "limit": 365},
+                "x_field": "snapshot_date",
+                "y_fields": [{"field": "net_worth", "label": "Net Worth", "color": "#10B981"}],
+                "show_grid": true
+              }
+            },
+            {
+              "id": "allocation-donut",
+              "type": "chart",
+              "position": {"x": 8, "y": 2, "w": 4, "h": 4},
+              "config": {
+                "title": "Asset Allocation",
+                "chart_type": "pie",
+                "data_source": {"type": "dataset_query", "sql": "SELECT asset_class, SUM(current_value) as value FROM ontology.asset GROUP BY asset_class"},
+                "label_field": "asset_class",
+                "value_field": "value"
+              }
+            },
+            {
+              "id": "top-assets",
+              "type": "table",
+              "position": {"x": 0, "y": 6, "w": 12, "h": 4},
+              "config": {
+                "title": "Top Assets",
+                "data_source": {"type": "ontology_query", "object_type": "asset", "sort": {"current_value": "desc"}, "limit": 20},
+                "columns": [
+                  {"field": "name", "label": "Asset", "sortable": true},
+                  {"field": "asset_class", "label": "Class"},
+                  {"field": "current_value", "label": "Value", "format": "currency", "sortable": true},
+                  {"field": "unrealized_gain_pct", "label": "Gain %", "format": "percent", "conditional_color": true},
+                  {"field": "liquidity", "label": "Liquidity"},
+                  {"field": "sector", "label": "Sector"}
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "runtime_metadata": {
+          "schema_version": "2026-05-11.ws.1",
+          "public_slug": null
+        },
+        "refresh_interval_seconds": 300
+      },
+      "theme": {
+        "primary_color": "#10B981",
+        "background": "#0f172a",
+        "card_background": "#1e293b",
+        "text_color": "#f8fafc"
+      }
+    },
+    {
+      "name": "Relationship Intelligence",
+      "slug": "relationship-intelligence",
+      "description": "Network graph visualization, CRM integration view, opportunity pipeline, and outreach prioritization",
+      "status": "published",
+      "template_key": "dashboard",
+      "pages": [
+        {
+          "id": "network",
+          "name": "Network Graph",
+          "layout": "grid",
+          "widgets": [
+            {
+              "id": "network-graph",
+              "type": "graph",
+              "position": {"x": 0, "y": 0, "w": 8, "h": 8},
+              "config": {
+                "title": "Relationship Network",
+                "data_source": {"type": "graph_query", "object_type": "person", "link_types": ["person_knows_person", "person_works_at"]},
+                "node_label": "{{first_name}} {{last_name}}",
+                "node_color_field": "influence_tier",
+                "node_size_field": "influence_score",
+                "layout": "force-directed"
+              }
+            },
+            {
+              "id": "top-contacts",
+              "type": "table",
+              "position": {"x": 8, "y": 0, "w": 4, "h": 4},
+              "config": {
+                "title": "Priority Contacts",
+                "data_source": {"type": "ontology_query", "object_type": "person", "sort": {"influence_score": "desc"}, "limit": 10},
+                "columns": [
+                  {"field": "first_name", "label": "Name"},
+                  {"field": "company", "label": "Company"},
+                  {"field": "days_since_contact", "label": "Days Silent", "conditional_color": true},
+                  {"field": "influence_score", "label": "Score"}
+                ]
+              }
+            },
+            {
+              "id": "opportunity-pipeline",
+              "type": "kanban",
+              "position": {"x": 8, "y": 4, "w": 4, "h": 4},
+              "config": {
+                "title": "Opportunity Pipeline",
+                "data_source": {"type": "ontology_query", "object_type": "opportunity", "filters": {"stage": {"$ne": "closed_lost"}}},
+                "group_by": "stage",
+                "card_title": "name",
+                "card_subtitle": "value",
+                "card_format": "currency"
+              }
+            }
+          ]
+        },
+        {
+          "id": "crm-sync",
+          "name": "CRM Status",
+          "layout": "grid",
+          "widgets": [
+            {
+              "id": "twenty-sync-status",
+              "type": "kpi",
+              "position": {"x": 0, "y": 0, "w": 4, "h": 2},
+              "config": {"title": "Twenty CRM Contacts", "data_source": {"type": "ontology_query", "object_type": "person", "filters": {"source_system": "twenty_crm"}, "count": true}, "format": "number"}
+            },
+            {
+              "id": "hermes-sync-status",
+              "type": "kpi",
+              "position": {"x": 4, "y": 0, "w": 4, "h": 2},
+              "config": {"title": "Hermes Contacts", "data_source": {"type": "ontology_query", "object_type": "person", "filters": {"source_system": "hermes"}, "count": true}, "format": "number"}
+            },
+            {
+              "id": "total-opps",
+              "type": "kpi",
+              "position": {"x": 8, "y": 0, "w": 4, "h": 2},
+              "config": {"title": "Active Opportunities", "data_source": {"type": "ontology_query", "object_type": "opportunity", "filters": {"stage": {"$nin": ["closed_won", "closed_lost"]}}, "count": true}, "format": "number"}
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "runtime_metadata": {"schema_version": "2026-05-11.ws.1"},
+        "refresh_interval_seconds": 600
+      },
+      "theme": {
+        "primary_color": "#3B82F6",
+        "background": "#0f172a",
+        "card_background": "#1e293b",
+        "text_color": "#f8fafc"
+      }
+    },
+    {
+      "name": "Impact Tracker",
+      "slug": "impact-tracker",
+      "description": "Community initiative dashboard — track beneficiaries, resources, and outcomes. Public embed available for stakeholders.",
+      "status": "published",
+      "template_key": "dashboard",
+      "pages": [
+        {
+          "id": "impact-overview",
+          "name": "Impact Overview",
+          "layout": "grid",
+          "widgets": [
+            {
+              "id": "people-helped",
+              "type": "kpi",
+              "position": {"x": 0, "y": 0, "w": 3, "h": 2},
+              "config": {"title": "People Helped", "data_source": {"type": "ontology_query", "object_type": "beneficiary", "count": true}, "format": "number", "icon": "heart"}
+            },
+            {
+              "id": "active-initiatives",
+              "type": "kpi",
+              "position": {"x": 3, "y": 0, "w": 3, "h": 2},
+              "config": {"title": "Active Initiatives", "data_source": {"type": "ontology_query", "object_type": "initiative", "filters": {"status": "active"}, "count": true}, "format": "number", "icon": "flag"}
+            },
+            {
+              "id": "resources-deployed",
+              "type": "kpi",
+              "position": {"x": 6, "y": 0, "w": 3, "h": 2},
+              "config": {"title": "Resources Deployed", "data_source": {"type": "ontology_query", "object_type": "resource", "filters": {"availability": {"$ne": "available"}}, "count": true}, "format": "number", "icon": "cube"}
+            },
+            {
+              "id": "impact-events",
+              "type": "kpi",
+              "position": {"x": 9, "y": 0, "w": 3, "h": 2},
+              "config": {"title": "Impact Events", "data_source": {"type": "ontology_query", "object_type": "impact_event", "count": true}, "format": "number", "icon": "sparkles"}
+            },
+            {
+              "id": "impact-timeline",
+              "type": "chart",
+              "position": {"x": 0, "y": 2, "w": 8, "h": 4},
+              "config": {
+                "title": "Impact Events Over Time",
+                "chart_type": "bar",
+                "data_source": {"type": "dataset_query", "sql": "SELECT DATE_TRUNC('week', date) as week, COUNT(*) as events, SUM(value) as total_value FROM ontology.impact_event GROUP BY week ORDER BY week"},
+                "x_field": "week",
+                "y_fields": [{"field": "events", "label": "Events", "color": "#10B981"}]
+              }
+            },
+            {
+              "id": "initiative-status",
+              "type": "table",
+              "position": {"x": 8, "y": 2, "w": 4, "h": 4},
+              "config": {
+                "title": "Initiative Status",
+                "data_source": {"type": "ontology_query", "object_type": "initiative", "sort": {"status": "asc"}},
+                "columns": [
+                  {"field": "name", "label": "Initiative"},
+                  {"field": "status", "label": "Status", "badge": true},
+                  {"field": "beneficiary_count", "label": "Served"},
+                  {"field": "spent", "label": "Spent", "format": "currency"}
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "settings": {
+        "runtime_metadata": {
+          "schema_version": "2026-05-11.ws.1",
+          "public_slug": "impact-public"
+        },
+        "refresh_interval_seconds": 900,
+        "allow_public_embed": true
+      },
+      "theme": {
+        "primary_color": "#EC4899",
+        "background": "#0f172a",
+        "card_background": "#1e293b",
+        "text_color": "#f8fafc"
+      }
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "schema_version": "openfoundry.ontology.seed.v1",
+  "description": "Relationship and influence ontology for personal network intelligence",
+  "object_types": [
+    {
+      "name": "person",
+      "display_name": "Person",
+      "plural_display_name": "People",
+      "description": "A person in your professional/personal network",
+      "icon": "user",
+      "color": "#3B82F6",
+      "primary_key_property": "person_id",
+      "editable": true,
+      "properties": [
+        {"name": "person_id", "display_name": "Person ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "first_name", "display_name": "First Name", "property_type": "string", "required": true},
+        {"name": "last_name", "display_name": "Last Name", "property_type": "string", "required": true},
+        {"name": "email", "display_name": "Email", "property_type": "string"},
+        {"name": "phone", "display_name": "Phone", "property_type": "string"},
+        {"name": "title", "display_name": "Title/Role", "property_type": "string"},
+        {"name": "company", "display_name": "Company", "property_type": "string"},
+        {"name": "linkedin_url", "display_name": "LinkedIn URL", "property_type": "string"},
+        {"name": "sector", "display_name": "Sector", "property_type": "string", "description": "tech|finance|healthcare|government|nonprofit|media|legal|real_estate|other"},
+        {"name": "geography", "display_name": "Geography", "property_type": "string"},
+        {"name": "influence_tier", "display_name": "Influence Tier", "property_type": "string", "description": "tier1_inner_circle|tier2_strong|tier3_warm|tier4_acquaintance|tier5_cold"},
+        {"name": "influence_score", "display_name": "Influence Score", "property_type": "float", "description": "Computed: connections × recency × sector_weight × frequency"},
+        {"name": "relationship_strength", "display_name": "Relationship Strength", "property_type": "float", "description": "0.0-1.0 computed from interaction recency and frequency"},
+        {"name": "last_contact_date", "display_name": "Last Contact", "property_type": "date"},
+        {"name": "days_since_contact", "display_name": "Days Since Contact", "property_type": "integer"},
+        {"name": "total_interactions", "display_name": "Total Interactions", "property_type": "integer"},
+        {"name": "introduced_by", "display_name": "Introduced By", "property_type": "reference"},
+        {"name": "tags", "display_name": "Tags", "property_type": "string[]"},
+        {"name": "notes", "display_name": "Notes", "property_type": "string"},
+        {"name": "source_system", "display_name": "Source System", "property_type": "string", "description": "twenty_crm|hermes|google_contacts|linkedin|manual"},
+        {"name": "external_id", "display_name": "External ID", "property_type": "string"},
+        {"name": "avatar_url", "display_name": "Avatar URL", "property_type": "string"}
+      ]
+    },
+    {
+      "name": "organization",
+      "display_name": "Organization",
+      "plural_display_name": "Organizations",
+      "description": "A company, fund, nonprofit, or government entity",
+      "icon": "building-office",
+      "color": "#6366F1",
+      "primary_key_property": "org_id",
+      "editable": true,
+      "properties": [
+        {"name": "org_id", "display_name": "Organization ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "name", "display_name": "Name", "property_type": "string", "required": true},
+        {"name": "org_type", "display_name": "Type", "property_type": "string", "description": "corporation|startup|vc_fund|pe_fund|nonprofit|government|university|media"},
+        {"name": "sector", "display_name": "Sector", "property_type": "string"},
+        {"name": "size", "display_name": "Size", "property_type": "string", "description": "solo|small|medium|large|enterprise"},
+        {"name": "website", "display_name": "Website", "property_type": "string"},
+        {"name": "headquarters", "display_name": "Headquarters", "property_type": "string"},
+        {"name": "relationship_strength", "display_name": "Relationship Strength", "property_type": "float"},
+        {"name": "engagement_level", "display_name": "Engagement Level", "property_type": "string", "description": "partner|client|prospect|dormant"},
+        {"name": "annual_revenue", "display_name": "Annual Revenue", "property_type": "float"},
+        {"name": "employee_count", "display_name": "Employee Count", "property_type": "integer"},
+        {"name": "source_system", "display_name": "Source System", "property_type": "string"},
+        {"name": "external_id", "display_name": "External ID", "property_type": "string"},
+        {"name": "notes", "display_name": "Notes", "property_type": "string"}
+      ]
+    },
+    {
+      "name": "interaction",
+      "display_name": "Interaction",
+      "plural_display_name": "Interactions",
+      "description": "A logged interaction (meeting, email, call, intro, deal discussion)",
+      "icon": "chat-bubble-left-right",
+      "color": "#14B8A6",
+      "primary_key_property": "interaction_id",
+      "editable": true,
+      "properties": [
+        {"name": "interaction_id", "display_name": "Interaction ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "date", "display_name": "Date", "property_type": "timestamp", "required": true},
+        {"name": "type", "display_name": "Type", "property_type": "string", "description": "meeting|email|call|text|intro|event|deal_discussion|social_media"},
+        {"name": "subject", "display_name": "Subject", "property_type": "string"},
+        {"name": "summary", "display_name": "Summary", "property_type": "string"},
+        {"name": "outcome", "display_name": "Outcome", "property_type": "string"},
+        {"name": "sentiment", "display_name": "Sentiment", "property_type": "string", "description": "positive|neutral|negative"},
+        {"name": "follow_up_needed", "display_name": "Follow-up Needed", "property_type": "boolean"},
+        {"name": "follow_up_date", "display_name": "Follow-up Date", "property_type": "date"},
+        {"name": "participants", "display_name": "Participants", "property_type": "string[]"},
+        {"name": "source_system", "display_name": "Source System", "property_type": "string"},
+        {"name": "external_id", "display_name": "External ID", "property_type": "string"}
+      ]
+    },
+    {
+      "name": "opportunity",
+      "display_name": "Opportunity",
+      "plural_display_name": "Opportunities",
+      "description": "A deal, partnership, collaboration, or investment opportunity",
+      "icon": "rocket-launch",
+      "color": "#F59E0B",
+      "primary_key_property": "opportunity_id",
+      "editable": true,
+      "properties": [
+        {"name": "opportunity_id", "display_name": "Opportunity ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "name", "display_name": "Name", "property_type": "string", "required": true},
+        {"name": "type", "display_name": "Type", "property_type": "string", "description": "deal|partnership|investment|collaboration|advisory|employment"},
+        {"name": "stage", "display_name": "Stage", "property_type": "string", "description": "identified|qualifying|negotiating|committed|closed_won|closed_lost"},
+        {"name": "value", "display_name": "Value ($)", "property_type": "float"},
+        {"name": "probability", "display_name": "Probability (%)", "property_type": "float"},
+        {"name": "expected_value", "display_name": "Expected Value", "property_type": "float"},
+        {"name": "expected_close_date", "display_name": "Expected Close", "property_type": "date"},
+        {"name": "actual_close_date", "display_name": "Actual Close", "property_type": "date"},
+        {"name": "description", "display_name": "Description", "property_type": "string"},
+        {"name": "next_action", "display_name": "Next Action", "property_type": "string"},
+        {"name": "next_action_date", "display_name": "Next Action Date", "property_type": "date"},
+        {"name": "source", "display_name": "Source", "property_type": "string", "description": "inbound|referral|outbound|network|event"},
+        {"name": "linked_person_ids", "display_name": "Key People", "property_type": "string[]"},
+        {"name": "linked_org_id", "display_name": "Organization", "property_type": "reference"},
+        {"name": "tags", "display_name": "Tags", "property_type": "string[]"},
+        {"name": "source_system", "display_name": "Source System", "property_type": "string"},
+        {"name": "external_id", "display_name": "External ID", "property_type": "string"}
+      ]
+    }
+  ],
+  "link_types": [
+    {
+      "name": "person_works_at",
+      "display_name": "Works At",
+      "source_type": "person",
+      "target_type": "organization",
+      "cardinality": "many_to_one"
+    },
+    {
+      "name": "person_knows_person",
+      "display_name": "Knows",
+      "source_type": "person",
+      "target_type": "person",
+      "cardinality": "many_to_many"
+    },
+    {
+      "name": "interaction_involves_person",
+      "display_name": "Involves",
+      "source_type": "interaction",
+      "target_type": "person",
+      "cardinality": "many_to_many"
+    },
+    {
+      "name": "opportunity_with_person",
+      "display_name": "Involves Person",
+      "source_type": "opportunity",
+      "target_type": "person",
+      "cardinality": "many_to_many"
+    },
+    {
+      "name": "opportunity_with_org",
+      "display_name": "With Organization",
+      "source_type": "opportunity",
+      "target_type": "organization",
+      "cardinality": "many_to_one"
+    },
+    {
+      "name": "person_introduced_by",
+      "display_name": "Introduced By",
+      "source_type": "person",
+      "target_type": "person",
+      "cardinality": "many_to_one"
+    }
+  ]
+}

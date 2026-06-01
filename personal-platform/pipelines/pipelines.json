@@ -1,0 +1,221 @@
+{
+  "schema_version": "openfoundry.pipeline.v1",
+  "pipelines": [
+    {
+      "name": "net-worth-daily",
+      "display_name": "Net Worth Daily Snapshot",
+      "description": "Joins all assets and liabilities, computes net worth, writes daily snapshot",
+      "schedule": "0 6 * * *",
+      "dag": {
+        "nodes": [
+          {
+            "id": "fetch-assets",
+            "type": "ontology_query",
+            "config": {
+              "object_type": "asset",
+              "filters": {},
+              "output_dataset": "raw_assets"
+            }
+          },
+          {
+            "id": "fetch-liabilities",
+            "type": "ontology_query",
+            "config": {
+              "object_type": "liability",
+              "filters": {},
+              "output_dataset": "raw_liabilities"
+            }
+          },
+          {
+            "id": "fetch-income",
+            "type": "ontology_query",
+            "config": {
+              "object_type": "income_stream",
+              "filters": {"active": true},
+              "output_dataset": "raw_income"
+            }
+          },
+          {
+            "id": "compute-net-worth",
+            "type": "sql_transform",
+            "depends_on": ["fetch-assets", "fetch-liabilities", "fetch-income"],
+            "config": {
+              "sql": "SELECT\n  CURRENT_DATE AS snapshot_date,\n  COALESCE(SUM(a.current_value), 0) AS total_assets,\n  COALESCE(SUM(l.principal_balance), 0) AS total_liabilities,\n  COALESCE(SUM(a.current_value), 0) - COALESCE(SUM(l.principal_balance), 0) AS net_worth,\n  COALESCE(SUM(CASE WHEN a.liquidity IN ('immediate', 'days') THEN a.current_value ELSE 0 END), 0) AS liquid_assets,\n  COALESCE(SUM(CASE WHEN a.liquidity IN ('months', 'illiquid') THEN a.current_value ELSE 0 END), 0) AS illiquid_assets\nFROM raw_assets a\nFULL OUTER JOIN raw_liabilities l ON FALSE",
+              "output_dataset": "net_worth_computed"
+            }
+          },
+          {
+            "id": "compute-income-burn",
+            "type": "sql_transform",
+            "depends_on": ["fetch-income"],
+            "config": {
+              "sql": "SELECT\n  SUM(CASE WHEN frequency = 'monthly' THEN amount\n    WHEN frequency = 'annually' THEN amount / 12\n    WHEN frequency = 'quarterly' THEN amount / 3\n    WHEN frequency = 'biweekly' THEN amount * 26 / 12\n    WHEN frequency = 'weekly' THEN amount * 52 / 12\n    ELSE amount END) AS monthly_income\nFROM raw_income\nWHERE active = true",
+              "output_dataset": "income_summary"
+            }
+          },
+          {
+            "id": "compute-allocation",
+            "type": "sql_transform",
+            "depends_on": ["fetch-assets"],
+            "config": {
+              "sql": "SELECT\n  asset_class,\n  SUM(current_value) AS class_value,\n  ROUND(SUM(current_value) * 100.0 / NULLIF((SELECT SUM(current_value) FROM raw_assets), 0), 2) AS pct\nFROM raw_assets\nGROUP BY asset_class\nORDER BY class_value DESC",
+              "output_dataset": "allocation_breakdown"
+            }
+          },
+          {
+            "id": "assemble-snapshot",
+            "type": "python_transform",
+            "depends_on": ["compute-net-worth", "compute-income-burn", "compute-allocation"],
+            "config": {
+              "script": "import json\nfrom datetime import date\n\nnw = inputs['net_worth_computed'][0]\nincome = inputs['income_summary'][0]\nallocation = inputs['allocation_breakdown']\n\nsnapshot = {\n    'snapshot_id': f'nw-{date.today().isoformat()}',\n    'snapshot_date': date.today().isoformat(),\n    'total_assets': nw['total_assets'],\n    'total_liabilities': nw['total_liabilities'],\n    'net_worth': nw['net_worth'],\n    'liquid_assets': nw['liquid_assets'],\n    'illiquid_assets': nw['illiquid_assets'],\n    'monthly_income': income['monthly_income'],\n    'asset_allocation': json.dumps({r['asset_class']: r['pct'] for r in allocation})\n}\n\noutput = [snapshot]",
+              "output_dataset": "daily_snapshot"
+            }
+          },
+          {
+            "id": "write-snapshot",
+            "type": "ontology_upsert",
+            "depends_on": ["assemble-snapshot"],
+            "config": {
+              "object_type": "net_worth_snapshot",
+              "primary_key": "snapshot_id",
+              "input_dataset": "daily_snapshot"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "influence-scoring",
+      "display_name": "Influence Score Calculator",
+      "description": "Computes relationship strength and influence scores from interaction data",
+      "schedule": "0 7 * * *",
+      "dag": {
+        "nodes": [
+          {
+            "id": "fetch-people",
+            "type": "ontology_query",
+            "config": {
+              "object_type": "person",
+              "filters": {},
+              "output_dataset": "raw_people"
+            }
+          },
+          {
+            "id": "fetch-interactions",
+            "type": "ontology_query",
+            "config": {
+              "object_type": "interaction",
+              "filters": {},
+              "output_dataset": "raw_interactions"
+            }
+          },
+          {
+            "id": "compute-scores",
+            "type": "python_transform",
+            "depends_on": ["fetch-people", "fetch-interactions"],
+            "config": {
+              "script": "from datetime import date, timedelta\nimport math\n\npeople = inputs['raw_people']\ninteractions = inputs['raw_interactions']\n\n# Sector weights for influence calculation\nSECTOR_WEIGHTS = {\n    'tech': 1.2, 'finance': 1.3, 'healthcare': 1.1,\n    'government': 1.4, 'media': 1.2, 'nonprofit': 1.0,\n    'legal': 1.1, 'real_estate': 1.0, 'other': 0.8\n}\n\ntoday = date.today()\nupdated_people = []\n\nfor person in people:\n    pid = person['person_id']\n    person_interactions = [i for i in interactions if pid in (i.get('participants') or [])]\n    \n    total = len(person_interactions)\n    if total == 0:\n        person['influence_score'] = 0.0\n        person['relationship_strength'] = 0.0\n        person['days_since_contact'] = 9999\n        updated_people.append(person)\n        continue\n    \n    # Recency: days since last interaction\n    dates = [i['date'] for i in person_interactions if i.get('date')]\n    last_contact = max(dates) if dates else None\n    days_since = (today - date.fromisoformat(last_contact[:10])).days if last_contact else 9999\n    \n    # Frequency factor (interactions per month over last 6 months)\n    recent = [i for i in person_interactions if i.get('date') and (today - date.fromisoformat(i['date'][:10])).days <= 180]\n    frequency = len(recent) / 6.0\n    \n    # Sector weight\n    sector_weight = SECTOR_WEIGHTS.get(person.get('sector', 'other'), 0.8)\n    \n    # Recency decay\n    recency_score = math.exp(-days_since / 90.0)  # 90-day half-life\n    \n    # Influence = connections * recency * sector * frequency\n    influence = round(total * recency_score * sector_weight * (1 + frequency), 2)\n    strength = round(min(1.0, recency_score * (1 + frequency * 0.3)), 3)\n    \n    person['influence_score'] = influence\n    person['relationship_strength'] = strength\n    person['days_since_contact'] = days_since\n    person['last_contact_date'] = last_contact[:10] if last_contact else None\n    person['total_interactions'] = total\n    updated_people.append(person)\n\noutput = updated_people",
+              "output_dataset": "scored_people"
+            }
+          },
+          {
+            "id": "write-scores",
+            "type": "ontology_upsert",
+            "depends_on": ["compute-scores"],
+            "config": {
+              "object_type": "person",
+              "primary_key": "person_id",
+              "input_dataset": "scored_people",
+              "update_fields": ["influence_score", "relationship_strength", "days_since_contact", "last_contact_date", "total_interactions"]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "resource-matching",
+      "display_name": "Resource-to-Need Matcher",
+      "description": "Matches available resources to beneficiary needs using embeddings",
+      "schedule": "0 8 * * 1",
+      "dag": {
+        "nodes": [
+          {
+            "id": "fetch-beneficiaries",
+            "type": "ontology_query",
+            "config": {
+              "object_type": "beneficiary",
+              "filters": {"status": "active"},
+              "output_dataset": "active_beneficiaries"
+            }
+          },
+          {
+            "id": "fetch-resources",
+            "type": "ontology_query",
+            "config": {
+              "object_type": "resource",
+              "filters": {"availability": "available"},
+              "output_dataset": "available_resources"
+            }
+          },
+          {
+            "id": "match-resources",
+            "type": "python_transform",
+            "depends_on": ["fetch-beneficiaries", "fetch-resources"],
+            "config": {
+              "script": "# Simple keyword matching (upgradeable to vector embeddings via Vespa)\n\nbeneficiaries = inputs['active_beneficiaries']\nresources = inputs['available_resources']\n\nmatches = []\nfor b in beneficiaries:\n    needs = b.get('needs', [])\n    if not needs:\n        continue\n    for r in resources:\n        r_tags = set(t.lower() for t in (r.get('tags') or []))\n        r_type = r.get('type', '').lower()\n        for need in needs:\n            need_lower = need.lower()\n            if need_lower in r_tags or need_lower == r_type or need_lower in r.get('name', '').lower():\n                matches.append({\n                    'beneficiary_id': b['beneficiary_id'],\n                    'beneficiary_name': b['name'],\n                    'need': need,\n                    'resource_id': r['resource_id'],\n                    'resource_name': r['name'],\n                    'resource_type': r['type'],\n                    'match_score': 0.8\n                })\n\noutput = matches",
+              "output_dataset": "resource_matches"
+            }
+          },
+          {
+            "id": "write-matches",
+            "type": "dataset_write",
+            "depends_on": ["match-resources"],
+            "config": {
+              "dataset_name": "resource_match_results",
+              "format": "iceberg",
+              "mode": "append"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "twenty-crm-sync",
+      "display_name": "Twenty CRM → Ontology Sync",
+      "description": "Syncs Twenty CRM people/companies into the Person/Organization ontology types with deduplication",
+      "schedule": "0 */4 * * *",
+      "dag": {
+        "nodes": [
+          {
+            "id": "ingest-twenty-people",
+            "type": "connector_sync",
+            "config": {
+              "connection": "twenty-crm-personal",
+              "source": "people",
+              "output_dataset": "twenty_people_raw"
+            }
+          },
+          {
+            "id": "transform-people",
+            "type": "sql_transform",
+            "depends_on": ["ingest-twenty-people"],
+            "config": {
+              "sql": "SELECT\n  CONCAT('twenty-', id) AS person_id,\n  firstName AS first_name,\n  lastName AS last_name,\n  email,\n  phone,\n  jobTitle AS title,\n  company.name AS company,\n  city AS geography,\n  'twenty_crm' AS source_system,\n  id AS external_id\nFROM twenty_people_raw",
+              "output_dataset": "twenty_people_mapped"
+            }
+          },
+          {
+            "id": "upsert-people",
+            "type": "ontology_upsert",
+            "depends_on": ["transform-people"],
+            "config": {
+              "object_type": "person",
+              "primary_key": "person_id",
+              "input_dataset": "twenty_people_mapped"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

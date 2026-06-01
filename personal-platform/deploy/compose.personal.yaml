@@ -1,0 +1,59 @@
+# Personal Platform Compose Overlay
+# Usage: docker compose -f compose.yaml -f personal-platform/deploy/compose.personal.yaml up -d
+#
+# This overlay adds the external systems (Twenty CRM, etc.) alongside OpenFoundry.
+# If you already run these systems externally, just configure the connections
+# in personal-platform/connectors/connections.json and skip this file.
+
+services:
+  # ─── Twenty CRM (optional — use if not already running) ───
+  twenty-crm:
+    image: twentycrm/twenty:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - PG_DATABASE_URL=******twenty-db:5432/twenty
+      - FRONT_BASE_URL=http://localhost:3000
+      - SERVER_URL=http://localhost:3000
+    depends_on:
+      twenty-db:
+        condition: service_healthy
+    profiles:
+      - crm
+
+  twenty-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: twenty
+      POSTGRES_PASSWORD: twenty
+      POSTGRES_DB: twenty
+    volumes:
+      - twenty_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twenty"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    profiles:
+      - crm
+
+  # ─── Ollama (local LLM — optional) ───
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    profiles:
+      - ai-local
+
+volumes:
+  twenty_data:
+  ollama_data:

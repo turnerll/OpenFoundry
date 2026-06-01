@@ -1,0 +1,135 @@
+{
+  "schema_version": "openfoundry.ontology.seed.v1",
+  "description": "Community impact ontology for helping others and tracking outcomes",
+  "object_types": [
+    {
+      "name": "beneficiary",
+      "display_name": "Beneficiary",
+      "plural_display_name": "Beneficiaries",
+      "description": "Individual or organization receiving help",
+      "icon": "heart",
+      "color": "#EC4899",
+      "primary_key_property": "beneficiary_id",
+      "editable": true,
+      "properties": [
+        {"name": "beneficiary_id", "display_name": "Beneficiary ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "name", "display_name": "Name", "property_type": "string", "required": true},
+        {"name": "type", "display_name": "Type", "property_type": "string", "description": "individual|family|organization|community"},
+        {"name": "needs", "display_name": "Needs", "property_type": "string[]"},
+        {"name": "geography", "display_name": "Geography", "property_type": "string"},
+        {"name": "status", "display_name": "Status", "property_type": "string", "description": "active|graduated|paused|intake"},
+        {"name": "intake_date", "display_name": "Intake Date", "property_type": "date"},
+        {"name": "impact_score", "display_name": "Impact Score", "property_type": "float"},
+        {"name": "total_resources_received", "display_name": "Total Resources Received", "property_type": "float"},
+        {"name": "outcomes_achieved", "display_name": "Outcomes Achieved", "property_type": "integer"},
+        {"name": "notes", "display_name": "Notes", "property_type": "string"},
+        {"name": "contact_info", "display_name": "Contact Info", "property_type": "json"}
+      ]
+    },
+    {
+      "name": "resource",
+      "display_name": "Resource",
+      "plural_display_name": "Resources",
+      "description": "Available resource (money, time, skills, connections) that can be deployed",
+      "icon": "cube",
+      "color": "#8B5CF6",
+      "primary_key_property": "resource_id",
+      "editable": true,
+      "properties": [
+        {"name": "resource_id", "display_name": "Resource ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "name", "display_name": "Name", "property_type": "string", "required": true},
+        {"name": "type", "display_name": "Type", "property_type": "string", "description": "money|time|skill|connection|equipment|space|knowledge"},
+        {"name": "owner", "display_name": "Owner/Donor", "property_type": "string"},
+        {"name": "availability", "display_name": "Availability", "property_type": "string", "description": "available|reserved|depleted|recurring"},
+        {"name": "quantity", "display_name": "Quantity", "property_type": "float"},
+        {"name": "unit", "display_name": "Unit", "property_type": "string", "description": "dollars|hours|sessions|units"},
+        {"name": "remaining", "display_name": "Remaining", "property_type": "float"},
+        {"name": "replenish_date", "display_name": "Replenish Date", "property_type": "date"},
+        {"name": "tags", "display_name": "Tags", "property_type": "string[]"},
+        {"name": "notes", "display_name": "Notes", "property_type": "string"}
+      ]
+    },
+    {
+      "name": "initiative",
+      "display_name": "Initiative",
+      "plural_display_name": "Initiatives",
+      "description": "A project or program with a goal, lead, beneficiaries, and resources",
+      "icon": "flag",
+      "color": "#F97316",
+      "primary_key_property": "initiative_id",
+      "editable": true,
+      "properties": [
+        {"name": "initiative_id", "display_name": "Initiative ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "name", "display_name": "Name", "property_type": "string", "required": true},
+        {"name": "goal", "display_name": "Goal", "property_type": "string"},
+        {"name": "description", "display_name": "Description", "property_type": "string"},
+        {"name": "status", "display_name": "Status", "property_type": "string", "description": "planning|active|paused|completed|cancelled"},
+        {"name": "lead", "display_name": "Lead", "property_type": "string"},
+        {"name": "start_date", "display_name": "Start Date", "property_type": "date"},
+        {"name": "target_end_date", "display_name": "Target End Date", "property_type": "date"},
+        {"name": "actual_end_date", "display_name": "Actual End Date", "property_type": "date"},
+        {"name": "budget", "display_name": "Budget", "property_type": "float"},
+        {"name": "spent", "display_name": "Spent", "property_type": "float"},
+        {"name": "beneficiary_count", "display_name": "Beneficiaries Served", "property_type": "integer"},
+        {"name": "impact_events_count", "display_name": "Impact Events", "property_type": "integer"},
+        {"name": "kpis", "display_name": "KPIs", "property_type": "json"},
+        {"name": "milestones", "display_name": "Milestones", "property_type": "json"},
+        {"name": "tags", "display_name": "Tags", "property_type": "string[]"}
+      ]
+    },
+    {
+      "name": "impact_event",
+      "display_name": "Impact Event",
+      "plural_display_name": "Impact Events",
+      "description": "A logged outcome tied to an initiative and beneficiary",
+      "icon": "sparkles",
+      "color": "#10B981",
+      "primary_key_property": "event_id",
+      "editable": true,
+      "properties": [
+        {"name": "event_id", "display_name": "Event ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "date", "display_name": "Date", "property_type": "timestamp", "required": true},
+        {"name": "type", "display_name": "Type", "property_type": "string", "description": "resource_deployed|milestone_reached|outcome_achieved|feedback_received|referral_made"},
+        {"name": "description", "display_name": "Description", "property_type": "string"},
+        {"name": "initiative_id", "display_name": "Initiative", "property_type": "reference"},
+        {"name": "beneficiary_id", "display_name": "Beneficiary", "property_type": "reference"},
+        {"name": "resource_id", "display_name": "Resource Used", "property_type": "reference"},
+        {"name": "value", "display_name": "Value", "property_type": "float"},
+        {"name": "metric_name", "display_name": "Metric Name", "property_type": "string"},
+        {"name": "metric_value", "display_name": "Metric Value", "property_type": "float"},
+        {"name": "evidence", "display_name": "Evidence/Notes", "property_type": "string"},
+        {"name": "logged_by", "display_name": "Logged By", "property_type": "string"}
+      ]
+    }
+  ],
+  "link_types": [
+    {
+      "name": "initiative_serves_beneficiary",
+      "display_name": "Serves",
+      "source_type": "initiative",
+      "target_type": "beneficiary",
+      "cardinality": "many_to_many"
+    },
+    {
+      "name": "initiative_uses_resource",
+      "display_name": "Uses Resource",
+      "source_type": "initiative",
+      "target_type": "resource",
+      "cardinality": "many_to_many"
+    },
+    {
+      "name": "impact_event_for_initiative",
+      "display_name": "For Initiative",
+      "source_type": "impact_event",
+      "target_type": "initiative",
+      "cardinality": "many_to_one"
+    },
+    {
+      "name": "impact_event_for_beneficiary",
+      "display_name": "For Beneficiary",
+      "source_type": "impact_event",
+      "target_type": "beneficiary",
+      "cardinality": "many_to_one"
+    }
+  ]
+}

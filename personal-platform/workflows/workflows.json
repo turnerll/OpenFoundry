@@ -1,0 +1,232 @@
+{
+  "schema_version": "openfoundry.workflows.v1",
+  "workflows": [
+    {
+      "name": "opportunity-tracker",
+      "display_name": "Opportunity Lifecycle Tracker",
+      "description": "When a new opportunity is created, assigns follow-up tasks, sets reminders, and logs outcomes",
+      "trigger": {
+        "type": "event",
+        "config": {
+          "topic": "ontology.objects.opportunity.created",
+          "filter": {}
+        }
+      },
+      "steps": [
+        {
+          "id": "assign-followup",
+          "kind": "action",
+          "type": "create_task",
+          "config": {
+            "title": "Follow up on opportunity: {{trigger.payload.name}}",
+            "due_in_days": 3,
+            "priority": "high",
+            "description": "New opportunity created: {{trigger.payload.name}} ({{trigger.payload.type}}) - Value: ${{trigger.payload.value}}"
+          },
+          "on_error": "skip"
+        },
+        {
+          "id": "notify-slack",
+          "kind": "action",
+          "type": "send_notification",
+          "config": {
+            "channel": "slack",
+            "message": "🚀 New opportunity: **{{trigger.payload.name}}** (${{trigger.payload.value}}) — Stage: {{trigger.payload.stage}}",
+            "webhook_url": "${SLACK_WEBHOOK_URL}"
+          },
+          "on_error": "skip"
+        },
+        {
+          "id": "schedule-reminder",
+          "kind": "action",
+          "type": "schedule_event",
+          "config": {
+            "delay_days": 7,
+            "event_type": "opportunity_reminder",
+            "payload": {
+              "opportunity_id": "{{trigger.payload.opportunity_id}}",
+              "name": "{{trigger.payload.name}}"
+            }
+          },
+          "on_error": "skip"
+        },
+        {
+          "id": "sync-to-twenty",
+          "kind": "action",
+          "type": "connector_action",
+          "config": {
+            "connection": "twenty-crm-personal",
+            "mutation": "createOpportunity",
+            "input": {
+              "name": "{{trigger.payload.name}}",
+              "amount": "{{trigger.payload.value}}",
+              "stage": "{{trigger.payload.stage}}"
+            }
+          },
+          "on_error": "skip"
+        }
+      ]
+    },
+    {
+      "name": "dormant-contact-outreach",
+      "display_name": "Dormant High-Value Contact Outreach",
+      "description": "Weekly check for high-influence contacts with >30 days silence; suggests outreach via notification",
+      "trigger": {
+        "type": "schedule",
+        "config": {
+          "cron": "0 9 * * 1"
+        }
+      },
+      "steps": [
+        {
+          "id": "find-dormant",
+          "kind": "action",
+          "type": "ontology_query",
+          "config": {
+            "object_type": "person",
+            "filters": {
+              "days_since_contact": {"$gt": 30},
+              "influence_tier": {"$in": ["tier1_inner_circle", "tier2_strong"]}
+            },
+            "sort": {"influence_score": "desc"},
+            "limit": 10,
+            "output_variable": "dormant_contacts"
+          },
+          "on_error": "fail"
+        },
+        {
+          "id": "notify-dormant",
+          "kind": "action",
+          "type": "send_notification",
+          "config": {
+            "channel": "slack",
+            "message": "⚠️ **Dormant High-Value Contacts** (>30 days):\n{{#each dormant_contacts}}\n• {{first_name}} {{last_name}} ({{company}}) — {{days_since_contact}} days, score: {{influence_score}}\n{{/each}}\n\nConsider reaching out this week.",
+            "webhook_url": "${SLACK_WEBHOOK_URL}"
+          },
+          "on_error": "skip"
+        }
+      ]
+    },
+    {
+      "name": "initiative-health-monitor",
+      "display_name": "Initiative Health Monitor",
+      "description": "Daily check on active initiatives — alerts when budget exceeded, milestones overdue, or no activity in 14 days",
+      "trigger": {
+        "type": "schedule",
+        "config": {
+          "cron": "0 8 * * *"
+        }
+      },
+      "steps": [
+        {
+          "id": "check-initiatives",
+          "kind": "action",
+          "type": "ontology_query",
+          "config": {
+            "object_type": "initiative",
+            "filters": {"status": "active"},
+            "output_variable": "active_initiatives"
+          },
+          "on_error": "fail"
+        },
+        {
+          "id": "check-health",
+          "kind": "action",
+          "type": "python_eval",
+          "depends_on": ["check-initiatives"],
+          "config": {
+            "script": "from datetime import date, timedelta\n\nalerts = []\nfor init in variables['active_initiatives']:\n    # Budget overrun\n    if init.get('spent', 0) > init.get('budget', float('inf')):\n        alerts.append(f\"🔴 {init['name']}: OVER BUDGET (${init['spent']:.0f} / ${init['budget']:.0f})\")\n    \n    # Target date passed\n    target = init.get('target_end_date')\n    if target and date.fromisoformat(target) < date.today():\n        alerts.append(f\"🟡 {init['name']}: PAST TARGET DATE ({target})\")\n\nvariables['health_alerts'] = alerts",
+            "output_variable": "health_alerts"
+          },
+          "on_error": "skip"
+        },
+        {
+          "id": "send-alerts",
+          "kind": "condition",
+          "type": "branch",
+          "depends_on": ["check-health"],
+          "config": {
+            "condition": "len(variables.get('health_alerts', [])) > 0",
+            "true_step": "notify-health",
+            "false_step": null
+          }
+        },
+        {
+          "id": "notify-health",
+          "kind": "action",
+          "type": "send_notification",
+          "config": {
+            "channel": "slack",
+            "message": "🏥 **Initiative Health Alerts**:\n{{#each health_alerts}}\n{{this}}\n{{/each}}",
+            "webhook_url": "${SLACK_WEBHOOK_URL}"
+          },
+          "on_error": "skip"
+        }
+      ]
+    },
+    {
+      "name": "weekly-intelligence-brief",
+      "display_name": "Weekly Intelligence Brief",
+      "description": "Every Monday morning, generate and send a comprehensive intelligence brief covering wealth, relationships, and impact",
+      "trigger": {
+        "type": "schedule",
+        "config": {
+          "cron": "0 7 * * 1"
+        }
+      },
+      "steps": [
+        {
+          "id": "trigger-net-worth",
+          "kind": "action",
+          "type": "pipeline_trigger",
+          "config": {
+            "pipeline": "net-worth-daily"
+          },
+          "on_error": "skip"
+        },
+        {
+          "id": "trigger-influence",
+          "kind": "action",
+          "type": "pipeline_trigger",
+          "config": {
+            "pipeline": "influence-scoring"
+          },
+          "on_error": "skip"
+        },
+        {
+          "id": "wait-pipelines",
+          "kind": "action",
+          "type": "wait",
+          "depends_on": ["trigger-net-worth", "trigger-influence"],
+          "config": {
+            "duration_seconds": 120
+          }
+        },
+        {
+          "id": "generate-brief",
+          "kind": "action",
+          "type": "agent_invoke",
+          "depends_on": ["wait-pipelines"],
+          "config": {
+            "agent": "personal-copilot",
+            "input": "Generate my weekly intelligence brief. Include: 1) Net worth change this week and YTD, 2) Top 5 relationships to prioritize this week, 3) Active opportunity pipeline summary, 4) Initiative status and any alerts, 5) Recommended actions for this week."
+          },
+          "on_error": "skip"
+        },
+        {
+          "id": "send-brief",
+          "kind": "action",
+          "type": "send_notification",
+          "depends_on": ["generate-brief"],
+          "config": {
+            "channel": "email",
+            "subject": "🧠 Weekly Intelligence Brief — {{current_date}}",
+            "body": "{{steps.generate-brief.output}}",
+            "to": "${OWNER_EMAIL}"
+          },
+          "on_error": "skip"
+        }
+      ]
+    }
+  ]
+}

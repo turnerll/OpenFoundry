@@ -1,0 +1,161 @@
+{
+  "schema_version": "openfoundry.ontology.seed.v1",
+  "description": "Financial ontology for personal wealth intelligence",
+  "object_types": [
+    {
+      "name": "asset",
+      "display_name": "Asset",
+      "plural_display_name": "Assets",
+      "description": "A financial asset (real estate, equities, crypto, private holdings, cash)",
+      "icon": "banknotes",
+      "color": "#10B981",
+      "primary_key_property": "asset_id",
+      "editable": true,
+      "properties": [
+        {"name": "asset_id", "display_name": "Asset ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "name", "display_name": "Name", "property_type": "string", "required": true},
+        {"name": "asset_class", "display_name": "Asset Class", "property_type": "string", "description": "equities|real_estate|crypto|fixed_income|cash|private_equity|commodities|alternatives"},
+        {"name": "ticker", "display_name": "Ticker/Symbol", "property_type": "string"},
+        {"name": "custodian", "display_name": "Custodian/Account", "property_type": "string"},
+        {"name": "current_value", "display_name": "Current Value", "property_type": "float", "required": true},
+        {"name": "cost_basis", "display_name": "Cost Basis", "property_type": "float"},
+        {"name": "acquisition_date", "display_name": "Acquisition Date", "property_type": "date"},
+        {"name": "currency", "display_name": "Currency", "property_type": "string", "default_value": "USD"},
+        {"name": "liquidity", "display_name": "Liquidity", "property_type": "string", "description": "immediate|days|weeks|months|illiquid"},
+        {"name": "unrealized_gain", "display_name": "Unrealized Gain", "property_type": "float"},
+        {"name": "unrealized_gain_pct", "display_name": "Unrealized Gain %", "property_type": "float"},
+        {"name": "annual_income", "display_name": "Annual Income/Yield", "property_type": "float"},
+        {"name": "sector", "display_name": "Sector", "property_type": "string"},
+        {"name": "geography", "display_name": "Geography", "property_type": "string"},
+        {"name": "tax_status", "display_name": "Tax Status", "property_type": "string", "description": "taxable|tax_deferred|tax_free|roth"},
+        {"name": "notes", "display_name": "Notes", "property_type": "string"},
+        {"name": "last_updated", "display_name": "Last Updated", "property_type": "timestamp"}
+      ]
+    },
+    {
+      "name": "liability",
+      "display_name": "Liability",
+      "plural_display_name": "Liabilities",
+      "description": "A financial obligation (mortgage, loan, credit, margin)",
+      "icon": "credit-card",
+      "color": "#EF4444",
+      "primary_key_property": "liability_id",
+      "editable": true,
+      "properties": [
+        {"name": "liability_id", "display_name": "Liability ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "name", "display_name": "Name", "property_type": "string", "required": true},
+        {"name": "liability_type", "display_name": "Type", "property_type": "string", "description": "mortgage|auto_loan|student_loan|credit_card|margin|personal_loan|heloc"},
+        {"name": "lender", "display_name": "Lender", "property_type": "string"},
+        {"name": "principal_balance", "display_name": "Principal Balance", "property_type": "float", "required": true},
+        {"name": "interest_rate", "display_name": "Interest Rate", "property_type": "float"},
+        {"name": "rate_type", "display_name": "Rate Type", "property_type": "string", "description": "fixed|variable"},
+        {"name": "monthly_payment", "display_name": "Monthly Payment", "property_type": "float"},
+        {"name": "maturity_date", "display_name": "Maturity Date", "property_type": "date"},
+        {"name": "origination_date", "display_name": "Origination Date", "property_type": "date"},
+        {"name": "collateral_asset_id", "display_name": "Collateral Asset", "property_type": "reference"},
+        {"name": "tax_deductible", "display_name": "Tax Deductible", "property_type": "boolean"},
+        {"name": "currency", "display_name": "Currency", "property_type": "string", "default_value": "USD"}
+      ]
+    },
+    {
+      "name": "income_stream",
+      "display_name": "Income Stream",
+      "plural_display_name": "Income Streams",
+      "description": "A recurring or project-based income source",
+      "icon": "arrow-trending-up",
+      "color": "#6366F1",
+      "primary_key_property": "stream_id",
+      "editable": true,
+      "properties": [
+        {"name": "stream_id", "display_name": "Stream ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "name", "display_name": "Name", "property_type": "string", "required": true},
+        {"name": "source", "display_name": "Source", "property_type": "string", "description": "employment|freelance|rental|dividends|interest|business|royalties|other"},
+        {"name": "amount", "display_name": "Amount", "property_type": "float", "required": true},
+        {"name": "frequency", "display_name": "Frequency", "property_type": "string", "description": "weekly|biweekly|monthly|quarterly|annually|one_time"},
+        {"name": "annual_equivalent", "display_name": "Annual Equivalent", "property_type": "float"},
+        {"name": "tax_status", "display_name": "Tax Status", "property_type": "string", "description": "w2|1099|k1|tax_free|foreign"},
+        {"name": "active", "display_name": "Active", "property_type": "boolean", "default_value": true},
+        {"name": "start_date", "display_name": "Start Date", "property_type": "date"},
+        {"name": "end_date", "display_name": "End Date", "property_type": "date"},
+        {"name": "linked_asset_id", "display_name": "Linked Asset", "property_type": "reference"},
+        {"name": "currency", "display_name": "Currency", "property_type": "string", "default_value": "USD"}
+      ]
+    },
+    {
+      "name": "net_worth_snapshot",
+      "display_name": "Net Worth Snapshot",
+      "plural_display_name": "Net Worth Snapshots",
+      "description": "Point-in-time net worth roll-up computed by pipeline",
+      "icon": "chart-bar",
+      "color": "#8B5CF6",
+      "primary_key_property": "snapshot_id",
+      "editable": false,
+      "managed_by": "pipeline:net-worth-daily",
+      "properties": [
+        {"name": "snapshot_id", "display_name": "Snapshot ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "snapshot_date", "display_name": "Date", "property_type": "date", "required": true},
+        {"name": "total_assets", "display_name": "Total Assets", "property_type": "float"},
+        {"name": "total_liabilities", "display_name": "Total Liabilities", "property_type": "float"},
+        {"name": "net_worth", "display_name": "Net Worth", "property_type": "float"},
+        {"name": "liquid_assets", "display_name": "Liquid Assets", "property_type": "float"},
+        {"name": "illiquid_assets", "display_name": "Illiquid Assets", "property_type": "float"},
+        {"name": "monthly_income", "display_name": "Monthly Income", "property_type": "float"},
+        {"name": "monthly_burn", "display_name": "Monthly Burn", "property_type": "float"},
+        {"name": "runway_months", "display_name": "Runway (months)", "property_type": "float"},
+        {"name": "asset_allocation", "display_name": "Asset Allocation", "property_type": "json"},
+        {"name": "delta_7d", "display_name": "7-Day Change", "property_type": "float"},
+        {"name": "delta_30d", "display_name": "30-Day Change", "property_type": "float"},
+        {"name": "delta_ytd", "display_name": "YTD Change", "property_type": "float"}
+      ]
+    },
+    {
+      "name": "transaction",
+      "display_name": "Transaction",
+      "plural_display_name": "Transactions",
+      "description": "A financial transaction (buy, sell, deposit, withdrawal, fee, dividend)",
+      "icon": "arrows-right-left",
+      "color": "#F59E0B",
+      "primary_key_property": "transaction_id",
+      "editable": true,
+      "properties": [
+        {"name": "transaction_id", "display_name": "Transaction ID", "property_type": "string", "required": true, "unique_constraint": true},
+        {"name": "date", "display_name": "Date", "property_type": "timestamp", "required": true},
+        {"name": "type", "display_name": "Type", "property_type": "string", "description": "buy|sell|deposit|withdrawal|dividend|interest|fee|transfer"},
+        {"name": "asset_id", "display_name": "Asset", "property_type": "reference"},
+        {"name": "account", "display_name": "Account", "property_type": "string"},
+        {"name": "amount", "display_name": "Amount", "property_type": "float", "required": true},
+        {"name": "quantity", "display_name": "Quantity", "property_type": "float"},
+        {"name": "price_per_unit", "display_name": "Price Per Unit", "property_type": "float"},
+        {"name": "fees", "display_name": "Fees", "property_type": "float"},
+        {"name": "currency", "display_name": "Currency", "property_type": "string", "default_value": "USD"},
+        {"name": "tax_lot_id", "display_name": "Tax Lot ID", "property_type": "string"},
+        {"name": "holding_period", "display_name": "Holding Period", "property_type": "string", "description": "short_term|long_term"},
+        {"name": "realized_gain", "display_name": "Realized Gain", "property_type": "float"},
+        {"name": "source_system", "display_name": "Source System", "property_type": "string"}
+      ]
+    }
+  ],
+  "link_types": [
+    {
+      "name": "asset_generates_income",
+      "display_name": "Generates Income",
+      "source_type": "asset",
+      "target_type": "income_stream",
+      "cardinality": "one_to_many"
+    },
+    {
+      "name": "liability_secured_by_asset",
+      "display_name": "Secured By",
+      "source_type": "liability",
+      "target_type": "asset",
+      "cardinality": "many_to_one"
+    },
+    {
+      "name": "transaction_on_asset",
+      "display_name": "Transaction On",
+      "source_type": "transaction",
+      "target_type": "asset",
+      "cardinality": "many_to_one"
+    }
+  ]
+}

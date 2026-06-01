@@ -1,0 +1,55 @@
+{
+  "connections": [
+    {
+      "name": "twenty-crm-personal",
+      "display_name": "Twenty CRM (Personal)",
+      "connector_type": "twenty_crm",
+      "description": "Primary CRM — contacts, companies, opportunities, activities",
+      "config": {
+        "base_url": "${TWENTY_CRM_URL}",
+        "api_token": "${TWENTY_CRM_API_TOKEN}",
+        "workspace": "personal"
+      },
+      "sync_schedule": "0 */4 * * *",
+      "sync_sources": ["people", "companies", "opportunities", "activities", "tasks"]
+    },
+    {
+      "name": "hermes-crm",
+      "display_name": "Hermes CRM",
+      "connector_type": "hermes_crm",
+      "description": "AI-powered outreach, content management, campaign tracking",
+      "config": {
+        "base_url": "${HERMES_URL}",
+        "api_key": "${HERMES_API_KEY}"
+      },
+      "sync_schedule": "0 */6 * * *",
+      "sync_sources": ["/api/contacts", "/api/campaigns", "/api/interactions"]
+    },
+    {
+      "name": "paperclip-agents",
+      "display_name": "Paperclip AI Agents",
+      "connector_type": "paperclip_agents",
+      "description": "AI agent orchestration — agent definitions, runs, outcomes",
+      "config": {
+        "base_url": "${PAPERCLIP_URL}",
+        "api_key": "${PAPERCLIP_API_KEY}",
+        "org_id": "${PAPERCLIP_ORG_ID}"
+      },
+      "sync_schedule": "0 */2 * * *",
+      "sync_sources": ["/api/agents", "/api/runs", "/api/outcomes", "/api/goals"]
+    },
+    {
+      "name": "world-monitor",
+      "display_name": "WorldMonitor / BransonOS",
+      "connector_type": "world_monitor",
+      "description": "Macro intelligence — world events, market signals, economic indicators",
+      "config": {
+        "base_url": "${WORLD_MONITOR_URL}",
+        "api_key": "${WORLD_MONITOR_API_KEY}",
+        "feeds": ["markets", "geopolitical", "economic", "sector"]
+      },
+      "sync_schedule": "0 * * * *",
+      "sync_sources": ["/api/events", "/api/markets", "/api/economic-indicators", "/api/sector-signals"]
+    }
+  ]
+}
