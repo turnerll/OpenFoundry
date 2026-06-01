@@ -1,6 +1,6 @@
 // Package twenty is the connector adapter for Twenty CRM (twentyhq/twenty).
 //
-// Twenty exposes a GraphQL API at /api/graphql with ****** auth.
+// Twenty exposes a GraphQL API at /api/graphql with token-based auth.
 // This adapter maps Twenty's core objects (people, companies, opportunities,
 // activities) into OpenFoundry's connector surface for ingestion into the
 // relationship ontology.
